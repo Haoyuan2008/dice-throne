@@ -1,0 +1,1020 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>王权投掷 · Dice Throne Demo</title>
+<style>
+/* ============================================================
+   主题变量（暖色调，符合游戏氛围）
+   —— 后续替换主题只需改这里
+   ============================================================ */
+:root{
+  --bg-cream: #f7efe2;
+  --bg-panel: rgba(255, 250, 240, 0.92);
+  --amber: #d88a3a;
+  --amber-deep: #b96f2a;
+  --caramel: #a9622b;
+  --warm-brown: #4a3423;
+  --terra: #c8754a;
+  --peach: #f2a67a;
+  --gold: #e6b24a;
+  --text: #4a3423;
+  --text-soft: #7a6048;
+  --line: rgba(169, 98, 43, 0.25);
+  --shadow: 0 8px 30px rgba(74, 52, 35, 0.18);
+  --radius: 18px;
+  --font: "Segoe UI", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+}
+
+*{ box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body{
+  font-family: var(--font);
+  color: var(--text);
+  min-height: 100%;
+}
+
+/* ============================================================
+   背景（背景图 + 暖色遮罩，保证可读性）
+   —— 替换背景图只需改 body::before 的 url
+   ============================================================ */
+body{
+  position: relative;
+  min-height: 100vh;
+  background: var(--bg-cream);
+}
+body::before{
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: url("assets/A_warm__cozy_fantasy_board_gam_2026-11-18T11-38-50.png") center/cover no-repeat;
+  filter: saturate(1.05) brightness(1.02);
+  z-index: -2;
+}
+body::after{
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(247,239,226,0.55) 0%, rgba(247,239,226,0.82) 100%);
+  z-index: -1;
+}
+
+/* ============================================================
+   布局
+   ============================================================ */
+.page{
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 28px 20px 60px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+/* 顶部导航 */
+.topbar{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.brand{
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.brand .logo{
+  width: 46px; height: 46px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #f2c67a, var(--gold) 60%, var(--amber-deep));
+  display: grid; place-items: center;
+  font-size: 24px;
+  box-shadow: var(--shadow);
+}
+.brand h1{
+  font-size: 22px;
+  letter-spacing: 1px;
+}
+.brand .sub{ font-size: 12px; color: var(--text-soft); }
+
+.nav{
+  display: flex; gap: 8px; flex-wrap: wrap;
+}
+.nav button{
+  border: 1px solid var(--line);
+  background: var(--bg-panel);
+  color: var(--text);
+  padding: 9px 16px;
+  border-radius: 999px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: .18s;
+}
+.nav button:hover{ background: #fff; box-shadow: var(--shadow); }
+.nav button.active{
+  background: var(--warm-brown);
+  color: #fff7ea;
+  border-color: var(--warm-brown);
+}
+
+/* 卡片面板 */
+.panel{
+  background: var(--bg-panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 24px;
+  backdrop-filter: blur(6px);
+}
+
+/* ============================================================
+   首页展示区（Hero）
+   ============================================================ */
+.hero{
+  text-align: center;
+  padding: 46px 24px;
+}
+.hero h2{
+  font-size: 32px;
+  margin-bottom: 10px;
+  letter-spacing: 1px;
+}
+.hero p.tagline{
+  color: var(--text-soft);
+  font-size: 16px;
+  max-width: 560px;
+  margin: 0 auto 26px;
+  line-height: 1.7;
+}
+.hero .cta{
+  display: inline-flex; gap: 12px; flex-wrap: wrap; justify-content: center;
+}
+.btn{
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-weight: 600;
+  border-radius: 999px;
+  padding: 13px 28px;
+  font-size: 15px;
+  transition: .18s;
+}
+.btn-primary{
+  background: linear-gradient(135deg, var(--amber), var(--amber-deep));
+  color: #fff7ea;
+  box-shadow: 0 6px 18px rgba(217,138,58,.4);
+}
+.btn-primary:hover{ transform: translateY(-2px); }
+.btn-ghost{
+  background: transparent;
+  border: 1.5px solid var(--amber-deep);
+  color: var(--amber-deep);
+}
+.btn-ghost:hover{ background: rgba(217,138,58,.1); }
+
+.features{
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 14px;
+  margin-top: 30px;
+  text-align: left;
+}
+.feature{
+  background: rgba(255,255,255,.5);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 16px;
+}
+.feature .ico{ font-size: 26px; }
+.feature h4{ margin: 8px 0 4px; font-size: 15px; }
+.feature p{ font-size: 13px; color: var(--text-soft); line-height: 1.6; }
+
+/* ============================================================
+   英雄选择界面
+   ============================================================ */
+.select-area{ display: none; }
+.select-area.visible{ display: block; }
+.select-area h2{ font-size: 24px; margin-bottom: 6px; }
+.select-area .select-sub{
+  color: var(--text-soft);
+  font-size: 14px;
+  margin-bottom: 18px;
+}
+.select-group-title{
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--caramel);
+  margin: 22px 0 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.select-group-title .count{
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-soft);
+  background: rgba(169,98,43,.12);
+  border-radius: 999px;
+  padding: 2px 10px;
+}
+.hero-grid{
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px;
+}
+.hero-card{
+  background: rgba(255,255,255,.55);
+  border: 2px solid var(--line);
+  border-radius: 14px;
+  padding: 14px 12px;
+  text-align: center;
+  cursor: pointer;
+  transition: .16s;
+  user-select: none;
+}
+.hero-card:hover{
+  transform: translateY(-3px);
+  box-shadow: var(--shadow);
+  border-color: var(--amber);
+}
+.hero-card.selected{
+  border-color: var(--amber-deep);
+  background: linear-gradient(145deg, #fff8e8, #f6dca8);
+  box-shadow: 0 0 0 3px rgba(217,138,58,.25);
+}
+.hero-card .avatar{
+  width: 56px; height: 56px;
+  margin: 0 auto 8px;
+  border-radius: 50%;
+  display: grid; place-items: center;
+  font-size: 28px;
+  background: radial-gradient(circle at 35% 30%, #f2c67a, var(--gold) 60%, var(--amber-deep));
+  box-shadow: 0 3px 10px rgba(74,52,35,.2);
+}
+.hero-card .hname{ font-size: 15px; font-weight: 700; margin-bottom: 2px; }
+.hero-card .hen{ font-size: 11px; color: var(--text-soft); margin-bottom: 6px; }
+.hero-card .hrole{ font-size: 12px; color: var(--caramel); line-height: 1.5; }
+.hero-card .hdiff{
+  display: inline-block;
+  margin-top: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--amber-deep);
+}
+.select-actions{
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 24px;
+}
+
+/* 英雄名显示（HUD 内） */
+.hud-hero{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  color: var(--warm-brown);
+}
+.hud-hero .mini-avatar{
+  width: 34px; height: 34px;
+  border-radius: 50%;
+  display: grid; place-items: center;
+  font-size: 18px;
+  background: radial-gradient(circle at 35% 30%, #f2c67a, var(--gold) 60%, var(--amber-deep));
+}
+
+/* ============================================================
+   游戏区
+   ============================================================ */
+.game-area{ display: none; }
+.game-area.visible{ display: block; }
+
+/* 顶栏信息条 */
+.hud{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+.hud-stat{
+  text-align: center;
+  min-width: 80px;
+}
+.hud-stat .num{
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--amber-deep);
+}
+.hud-stat .lbl{
+  font-size: 12px;
+  color: var(--text-soft);
+}
+
+/* 得分反馈条 */
+.score-feedback{
+  min-height: 34px;
+  text-align: center;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--caramel);
+  margin-bottom: 16px;
+  transition: .2s;
+}
+.score-feedback.flash{ animation: pop .4s ease; }
+@keyframes pop{ 0%{transform:scale(.9);opacity:.4} 100%{transform:scale(1);opacity:1} }
+
+/* 骰子区 */
+.dice-row{
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 18px;
+  margin: 18px 0 26px;
+}
+.die{
+  width: 74px; height: 74px;
+  border-radius: 16px;
+  background: linear-gradient(145deg, #fffdf7, #f0e2c8);
+  border: 2px solid var(--line);
+  box-shadow: 0 5px 14px rgba(74,52,35,.15);
+  display: grid; place-items: center;
+  font-size: 38px;
+  cursor: pointer;
+  user-select: none;
+  transition: .15s;
+  position: relative;
+}
+.die.locked{
+  border: 3px solid var(--amber-deep);
+  box-shadow: 0 0 0 4px rgba(217,138,58,.25);
+  background: linear-gradient(145deg, #fff8e8, #f6dca8);
+}
+.die.locked::after{
+  content: "锁定";
+  position: absolute;
+  bottom: -20px;
+  font-size: 11px;
+  color: var(--amber-deep);
+  font-weight: 600;
+}
+.die.rolling{ animation: shake .5s ease; }
+@keyframes shake{
+  0%{transform:translate(0,0) rotate(0)}
+  25%{transform:translate(-4px,2px) rotate(-6deg)}
+  50%{transform:translate(4px,-2px) rotate(6deg)}
+  75%{transform:translate(-3px,-1px) rotate(-4deg)}
+  100%{transform:translate(0,0) rotate(0)}
+}
+
+/* 操作按钮 */
+.controls{
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.controls .btn:disabled{
+  opacity: .45;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* 计分表 */
+.scoreboard{
+  margin-top: 26px;
+  overflow-x: auto;
+}
+.scoreboard table{
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+.scoreboard th, .scoreboard td{
+  padding: 10px 12px;
+  text-align: center;
+  border-bottom: 1px solid var(--line);
+}
+.scoreboard th{
+  background: rgba(217,138,58,.12);
+  color: var(--caramel);
+  font-weight: 600;
+}
+.scoreboard tr.achieved td{
+  background: rgba(230,178,74,.18);
+  color: var(--amber-deep);
+  font-weight: 600;
+}
+.scoreboard td.combo{ text-align: left; }
+
+/* ============================================================
+   规则说明区
+   ============================================================ */
+.rules-area{ display: none; }
+.rules-area.visible{ display: block; }
+.rules-area h2{ margin-bottom: 16px; font-size: 24px; }
+.rules-area h3{ margin: 20px 0 8px; font-size: 17px; color: var(--caramel); }
+.rules-area p, .rules-area li{
+  font-size: 14px;
+  line-height: 1.8;
+  color: var(--text);
+}
+.rules-area ul, .rules-area ol{ padding-left: 22px; }
+.rules-area .note{
+  margin-top: 20px;
+  padding: 14px 18px;
+  background: rgba(230,178,74,.15);
+  border-left: 4px solid var(--gold);
+  border-radius: 8px;
+  font-size: 13px;
+  color: var(--caramel);
+}
+.rules-area code{
+  background: rgba(169,98,43,.12);
+  padding: 2px 7px;
+  border-radius: 5px;
+  font-size: 13px;
+}
+
+/* 模块标记（提示哪些是可替换的） */
+.replacetag{
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--terra);
+  background: rgba(200,117,74,.14);
+  border: 1px dashed var(--terra);
+  border-radius: 6px;
+  padding: 1px 7px;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+/* 页脚 */
+footer{
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-soft);
+  margin-top: 10px;
+}
+
+/* ============================================================
+   响应式
+   ============================================================ */
+@media (max-width: 600px){
+  .hero h2{ font-size: 26px; }
+  .die{ width: 60px; height: 60px; font-size: 30px; border-radius: 13px; }
+  .dice-row{ gap: 12px; }
+  .panel{ padding: 18px; }
+  .brand h1{ font-size: 18px; }
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- ===== 顶部导航 ===== -->
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo">👑</div>
+      <div>
+        <h1>王权投掷</h1>
+        <div class="sub">Dice Throne · 网页演示初版</div>
+      </div>
+    </div>
+    <nav class="nav" id="nav">
+      <button data-view="home" class="active">首页</button>
+      <button data-view="select">选择英雄</button>
+      <button data-view="game">开始游戏</button>
+      <button data-view="rules">规则说明</button>
+    </nav>
+  </header>
+
+  <!-- ===== 首页展示 ===== -->
+  <section class="panel hero" id="view-home">
+    <h2>掷出你的王权之路</h2>
+    <p class="tagline">
+      化身宫廷挑战者，投掷五颗命运骰。锁定心仪的结果，凑出强力组合，向疯王的王座发起冲击。
+      每回合三次机会，策略与运气并重。
+    </p>
+    <div class="cta">
+      <button class="btn btn-primary" onclick="switchView('select')">⚔️ 选择英雄</button>
+      <button class="btn btn-ghost" onclick="startGame()">🎲 快速开局</button>
+      <button class="btn btn-ghost" onclick="switchView('rules')">📖 查看规则</button>
+    </div>
+
+    <div class="features">
+      <div class="feature">
+        <div class="ico">🎲</div>
+        <h4>掷骰锁定</h4>
+        <p>最多 3 次掷骰机会，点击骰子锁定想要保留的面，重掷其余。</p>
+      </div>
+      <div class="feature">
+        <div class="ico">⚔️</div>
+        <h4>组合计分</h4>
+        <p>对子、三条、五条、顺子……凑出强力组合换取高额分数。</p>
+      </div>
+      <div class="feature">
+        <div class="ico">👑</div>
+        <h4>十六英雄</h4>
+        <p>第一季、第二季共 16 名英雄可选，各具专属骰面与战斗风格。</p>
+      </div>
+      <div class="feature">
+        <div class="ico">🛠️</div>
+        <h4>模块可替换</h4>
+        <p>规则、英雄、组合均为模块化设计，便于边玩边调整。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 英雄选择区 ===== -->
+  <section class="panel select-area" id="view-select">
+    <h2>选择你的英雄</h2>
+    <p class="select-sub">第一季与第二季共 16 名英雄，各具专属骰面与战斗风格。点击选中后进入对战。</p>
+    <div id="hero-select-groups"></div>
+    <div class="select-actions">
+      <button class="btn btn-primary" id="btn-confirm-hero" onclick="confirmHero()">✅ 确认出战</button>
+      <button class="btn btn-ghost" onclick="switchView('home')">返回首页</button>
+    </div>
+  </section>
+
+  <!-- ===== 游戏区 ===== -->
+  <section class="panel game-area" id="view-game">
+    <div class="hud">
+      <div class="hud-stat">
+        <div class="hud-hero" id="hud-hero">—</div>
+        <div class="lbl">当前英雄</div>
+      </div>
+      <div class="hud-stat">
+        <div class="num" id="hud-round">1</div>
+        <div class="lbl">回合</div>
+      </div>
+      <div class="hud-stat">
+        <div class="num" id="hud-rolls">3</div>
+        <div class="lbl">剩余掷骰</div>
+      </div>
+      <div class="hud-stat">
+        <div class="num" id="hud-score">0</div>
+        <div class="lbl">总得分</div>
+      </div>
+      <div class="hud-stat">
+        <div class="num" id="hud-best">—</div>
+        <div class="lbl">最佳组合</div>
+      </div>
+    </div>
+
+    <div class="score-feedback" id="feedback">点击「掷骰」开始你的回合</div>
+
+    <div class="dice-row" id="dice-row"></div>
+
+    <div class="controls">
+      <button class="btn btn-primary" id="btn-roll" onclick="rollDice()">🎲 掷骰</button>
+      <button class="btn btn-ghost" id="btn-lock" onclick="lockAllDice()">🔒 全部锁定</button>
+      <button class="btn btn-ghost" id="btn-pause" onclick="togglePause()">⏸ 暂停</button>
+      <button class="btn btn-ghost" id="btn-restart" onclick="restartGame()">🔄 重开</button>
+    </div>
+
+    <div class="scoreboard">
+      <table>
+        <thead>
+          <tr>
+            <th class="combo">组合</th>
+            <th>条件</th>
+            <th>得分</th>
+            <th>状态</th>
+          </tr>
+        </thead>
+        <tbody id="scoreboard-body"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ===== 规则说明区 ===== -->
+  <section class="panel rules-area" id="view-rules">
+    <h2>规则说明 <span class="replacetag">可替换模块</span></h2>
+
+    <h3>🎯 目标</h3>
+    <p>在每回合有限的掷骰机会内，凑出高分骰子组合，累计总分冲击最高王权段位。</p>
+
+    <h3>🎲 核心玩法</h3>
+    <ol>
+      <li>每回合你有 <strong>3 次掷骰机会</strong>（起始为 3 次）。</li>
+      <li>每次掷骰后，可<strong>点击任意骰子将其「锁定」</strong>，锁定后的骰子在下一次掷骰时保持不变。</li>
+      <li>再次掷骰只重掷<strong>未锁定</strong>的骰子。</li>
+      <li>掷骰机会用尽（或主动选择「结束回合」）后，系统根据最终骰面结算组合得分。</li>
+    </ol>
+
+    <h3>⭐ 骰面与组合计分 <span class="replacetag">可替换模块</span></h3>
+    <ul>
+      <li>每名英雄拥有<strong>专属骰面池</strong>（掷骰只从该英雄的骰面中随机），体现角色差异。</li>
+      <li>同类骰面凑对子、三条、四条、五条；特定图标（如王冠、剑）凑满数量可触发专属加分。</li>
+      <li>具体得分见游戏区计分表（达成后高亮显示）。</li>
+    </ul>
+
+    <h3>⚔️ 英雄（第一季 + 第二季共 16 名）<span class="replacetag">可替换模块</span></h3>
+    <ul>
+      <li><strong>第一季</strong>：野蛮人、月精灵、火法师、暗影盗贼、武僧、圣武士、忍者、树人。</li>
+      <li><strong>第二季</strong>：枪手、武士、战术家、女猎手、诅咒海盗、工匠、炽天使、吸血鬼领主。</li>
+      <li>名单严格对应《王权骰铸》第一、二季，未混入其他系列角色。</li>
+    </ul>
+
+    <h3>🏆 段位（进度反馈）<span class="replacetag">可替换模块</span></h3>
+    <ul>
+      <li>根据累计总分，会显示对应的王权段位：平民 → 侍从 → 骑士 → 领主 → 王座挑战者。</li>
+    </ul>
+
+    <div class="note">
+      <strong>说明：</strong>这是基于《王权骰铸》核心循环（掷骰→锁定→重掷→凑组合）设计的<strong>轻量可玩初版</strong>。
+      规则中的「组合分值」「段位」「骰面图标」「每回合掷骰次数」等均为可替换参数，
+      集中在脚本区顶部的 <code>HEROES</code> 与 <code>COMBOS</code> 中，方便你边玩边调整。
+    </div>
+  </section>
+
+  <footer>王权投掷 · Dice Throne 网页演示初版 · 所有规则与模块均可替换</footer>
+</div>
+
+<script>
+/* ============================================================
+   配置区 —— 后续调整规则/模块只需改这里
+   ============================================================ */
+
+// 骰面图标（通用骰面池，英雄可覆盖专属骰面）
+const DICE_FACES = ["⚔️", "⭐", "🌙", "🔥", "❤️", "👑"];
+
+// ============================================================
+// 英雄数据（第一季 8 名 + 第二季 8 名，共 16 名）
+// —— 名单严格对应《王权骰铸》Dice Throne 第一、二季，勿替换为其他角色
+// season: 1 | 2 ；faces: 该英雄专属骰面图标池（掷骰只从这些面中随机）
+// role: 战斗定位 ；diff: 难度 1-5（参考官方复杂度，部分为定位归纳）
+// ============================================================
+const HEROES = [
+  // ---- 第一季 Season One ----
+  { id:"barbarian",   name:"野蛮人",    en:"Barbarian",      season:1, faces:["⚔️","❤️","⭐"], role:"暴力近战，重击回血",   diff:2 },
+  { id:"moonelf",     name:"月精灵",    en:"Moon Elf",       season:1, faces:["🏹","👣","🌙"], role:"控牌闪避，软控磨血",   diff:3 },
+  { id:"pyromancer",  name:"火法师",    en:"Pyromancer",     season:1, faces:["🔥","💥","🔥","☄️"], role:"玻璃大炮，燃烧爆发",  diff:3 },
+  { id:"shadowthief", name:"暗影盗贼",  en:"Shadow Thief",   season:1, faces:["🗡️","💰","🃏","🌑"], role:"中毒偷资源，后期爆发", diff:4 },
+  { id:"monk",        name:"武僧",      en:"Monk",           season:1, faces:["👊","🌀","☯️"], role:"气资源，攻防平衡",      diff:4 },
+  { id:"paladin",     name:"圣武士",    en:"Paladin",        season:1, faces:["⚔️","🛡️","✨"], role:"攻防双 buff，韧性生存", diff:3 },
+  { id:"ninja",       name:"忍者",      en:"Ninja",          season:1, faces:["🥷","🗡️","💨"], role:"闪避突袭，迅捷连击",   diff:4 },
+  { id:"treant",      name:"树人",      en:"Treant",         season:1, faces:["🌳","🌿","🛡️"], role:"扎根防御，回复坚韧",   diff:3 },
+
+  // ---- 第二季 Season Two ----
+  { id:"gunslinger",  name:"枪手",      en:"Gunslinger",     season:2, faces:["🔫","💨","🎯"], role:"装填连击，双枪压制",   diff:4 },
+  { id:"samurai",     name:"武士",      en:"Samurai",        season:2, faces:["⚔️","🗡️","🎖️"], role:"荣誉增益，耻辱减益",   diff:3 },
+  { id:"tactician",   name:"战术家",    en:"Tactician",      season:2, faces:["🗺️","📐","⚙️"], role:"战术优势，控场改骰",   diff:5 },
+  { id:"huntress",    name:"女猎手",    en:"Huntress",       season:2, faces:["🗡️","🦁","🏹"], role:"妮拉同伴，流血磨血",   diff:5 },
+  { id:"cursedpirate",name:"诅咒海盗",  en:"Cursed Pirate",  season:2, faces:["🏴‍☠️","💰","💀"], role:"骷髅变身，爆发反噬",   diff:4 },
+  { id:"artificer",   name:"工匠",      en:"Artificer",      season:2, faces:["⚙️","🤖","🔧"], role:"机器人，纳米合成",      diff:4 },
+  { id:"seraph",      name:"炽天使",    en:"Seraph",         season:2, faces:["😇","✨","🕊️"], role:"飞行祝福，团队守护",   diff:4 },
+  { id:"vampirelord", name:"吸血鬼领主",en:"Vampire Lord",   season:2, faces:["🧛","🩸","🦇"], role:"鲜血之力，吸血回血",   diff:4 },
+];
+
+// 每回合掷骰次数上限（可替换）
+const MAX_ROLLS = 3;
+
+// 骰子数量（可替换）
+const DICE_COUNT = 5;
+
+// 组合计分规则（可替换：改名称/条件/分值）
+// key 为组合类型；label 显示名；desc 条件说明；test 判定函数(接收骰面数组，返回分数或0)
+// 注：通用组合基于"同类骰面数量"判定，对所有英雄都成立；
+//     专属印记（signature）为动态规则，基于当前英雄骰面池中的图标，
+//     故每个英雄都有属于自己的"印记加分"，体现角色差异。
+const COMBOS = [
+  { key:"five",   label:"五条 · 至高王权", desc:"五个相同骰面",        test: faces => countMost(faces) === 5 ? 50 : 0 },
+  { key:"four",   label:"四条 · 王座之约", desc:"四个相同骰面",        test: faces => countMost(faces) === 4 ? 25 : 0 },
+  { key:"full",   label:"葫芦 · 宫廷联姻", desc:"三条 + 一对",         test: faces => isFullHouse(faces) ? 20 : 0 },
+  { key:"three",  label:"三条 · 骑士之誓", desc:"三个相同骰面",        test: faces => countMost(faces) === 3 ? 15 : 0 },
+  { key:"twopair",label:"两对 · 双翼",    desc:"两个对子",            test: faces => isTwoPair(faces) ? 10 : 0 },
+  { key:"pair",   label:"一对 · 起步",    desc:"两个相同骰面",        test: faces => countMost(faces) === 2 ? 5 : 0 },
+  { key:"signature", label:"专属印记",     desc:"任一骰面出现 3 次+",   test: faces => signatureScore(faces) },
+];
+
+// 专属印记：当前英雄骰面池中，任意一个图标出现 ≥3 次即加分（分值按出现次数递增）
+function signatureScore(faces){
+  const c = {};
+  faces.forEach(f => c[f] = (c[f]||0)+1);
+  const max = Math.max(0, ...Object.values(c));
+  // 3个=12分，4个=18分，5个=30分（与同类数量联动，但不覆盖五条更高分）
+  if(max === 5) return 0;      // 五条已由"五条"项计 50 分，避免重复
+  if(max === 4) return 0;      // 四条已由"四条"项计 25 分
+  if(max === 3) return 12;     // 三条时，印记额外再给 12 分
+  return 0;
+}
+
+// 段位表（可替换）
+const RANKS = [
+  { min:0,   name:"平民" },
+  { min:50,  name:"侍从" },
+  { min:120, name:"骑士" },
+  { min:220, name:"领主" },
+  { min:350, name:"王座挑战者" },
+];
+
+/* ============================================================
+   游戏状态
+   ============================================================ */
+const state = {
+  view: "home",
+  currentHero: HEROES[0],   // 当前选中英雄（默认第一位）
+  round: 1,
+  rollsLeft: MAX_ROLLS,
+  totalScore: 0,
+  bestCombo: null,
+  dice: [],          // 每颗骰子的当前面
+  locked: [],        // 每颗骰子是否锁定
+  paused: false,
+};
+
+/* ============================================================
+   工具函数
+   ============================================================ */
+function randFace(){
+  // 基于当前英雄的专属骰面池掷骰（英雄差异化核心）
+  const pool = state.currentHero.faces || DICE_FACES;
+  return pool[Math.floor(Math.random()*pool.length)];
+}
+
+function countMost(faces){
+  const c = {};
+  faces.forEach(f => c[f] = (c[f]||0)+1);
+  return Math.max(...Object.values(c));
+}
+
+function isFullHouse(faces){
+  const c = {};
+  faces.forEach(f => c[f] = (c[f]||0)+1);
+  const vals = Object.values(c).sort();
+  return vals.length === 2 && vals[0] === 2 && vals[1] === 3;
+}
+
+function isTwoPair(faces){
+  const c = {};
+  faces.forEach(f => c[f] = (c[f]||0)+1);
+  const pairs = Object.values(c).filter(v => v === 2).length;
+  return pairs >= 2;
+}
+
+function bestCombo(faces){
+  let best = null, bestScore = 0;
+  for(const combo of COMBOS){
+    const s = combo.test(faces);
+    if(s > bestScore){ bestScore = s; best = combo; }
+  }
+  return { combo: best, score: bestScore };
+}
+
+function currentRank(score){
+  let r = RANKS[0];
+  for(const rank of RANKS){ if(score >= rank.min) r = rank; }
+  return r;
+}
+
+/* ============================================================
+   视图切换
+   ============================================================ */
+function switchView(view){
+  state.view = view;
+  document.querySelectorAll(".nav button").forEach(b => b.classList.toggle("active", b.dataset.view === view));
+  const views = ["home", "select", "game", "rules"];
+  views.forEach(v => {
+    const el = document.getElementById("view-" + v);
+    if(!el) return;
+    el.classList.toggle("visible", v === view);
+    el.style.display = v === view ? "block" : "none";
+  });
+  // 进入选择页时刷新英雄网格（反映当前选中态）
+  if(view === "select") renderHeroSelect();
+}
+
+/* ============================================================
+   英雄选择
+   ============================================================ */
+// 渲染英雄选择网格（按第一季/第二季分组）
+function renderHeroSelect(){
+  const container = document.getElementById("hero-select-groups");
+  container.innerHTML = "";
+
+  const groups = [
+    { season: 1, title: "第一季 Season One" },
+    { season: 2, title: "第二季 Season Two" },
+  ];
+
+  groups.forEach(g => {
+    const list = HEROES.filter(h => h.season === g.season);
+
+    const titleEl = document.createElement("div");
+    titleEl.className = "select-group-title";
+    titleEl.innerHTML = `${g.title} <span class="count">${list.length} 名</span>`;
+    container.appendChild(titleEl);
+
+    const grid = document.createElement("div");
+    grid.className = "hero-grid";
+
+    list.forEach(hero => {
+      const card = document.createElement("div");
+      card.className = "hero-card" + (state.currentHero.id === hero.id ? " selected" : "");
+      card.innerHTML = `
+        <div class="avatar">${hero.faces[0]}</div>
+        <div class="hname">${hero.name}</div>
+        <div class="hen">${hero.en}</div>
+        <div class="hrole">${hero.role}</div>
+        <div class="hdiff">难度 ${"★".repeat(hero.diff)}</div>
+      `;
+      card.onclick = () => selectHero(hero.id);
+      grid.appendChild(card);
+    });
+
+    container.appendChild(grid);
+  });
+
+  // 更新确认按钮文案
+  document.getElementById("btn-confirm-hero").textContent = `✅ 以「${state.currentHero.name}」出战`;
+}
+
+function selectHero(id){
+  const hero = HEROES.find(h => h.id === id);
+  if(!hero) return;
+  state.currentHero = hero;
+  renderHeroSelect(); // 刷新选中态
+}
+
+function confirmHero(){
+  restartGame();
+  switchView("game");
+}
+function startGame(){
+  restartGame();
+  switchView("game");
+}
+
+function restartGame(){
+  state.round = 1;
+  state.rollsLeft = MAX_ROLLS;
+  state.totalScore = 0;
+  state.bestCombo = null;
+  state.paused = false;
+  state.dice = [];
+  state.locked = [];
+  for(let i=0;i<DICE_COUNT;i++){ state.dice.push("❔"); state.locked.push(false); }
+  renderDice();
+  renderHUD();
+  renderScoreboard();
+  setFeedback("点击「掷骰」开始你的回合");
+  updateButtons();
+}
+
+function togglePause(){
+  state.paused = !state.paused;
+  document.getElementById("btn-pause").textContent = state.paused ? "▶ 继续" : "⏸ 暂停";
+  setFeedback(state.paused ? "⏸ 已暂停" : "已继续");
+  updateButtons();
+}
+
+function rollDice(){
+  if(state.paused) return;
+  if(state.rollsLeft <= 0){ setFeedback("本回合掷骰机会已用完，请「结束回合」结算"); return; }
+
+  // 掷未锁定的骰子
+  state.dice = state.dice.map((face, i) => state.locked[i] ? face : randFace());
+  state.rollsLeft--;
+
+  // 动画
+  document.querySelectorAll(".die").forEach(d => d.classList.add("rolling"));
+  setTimeout(()=> document.querySelectorAll(".die").forEach(d => d.classList.remove("rolling")), 500);
+
+  renderDice();
+  renderHUD();
+  updateButtons();
+
+  if(state.rollsLeft <= 0){
+    setFeedback("机会用尽，自动结算本回合");
+    setTimeout(()=> settleRound(), 600);
+  } else {
+    setFeedback(`还剩 ${state.rollsLeft} 次掷骰，可点击骰子锁定`);
+  }
+}
+
+function toggleLock(i){
+  if(state.paused) return;
+  if(state.rollsLeft >= MAX_ROLLS && !state.dice.some(f => f !== "❔")){
+    // 尚未掷出任何骰子时不可锁定
+    return;
+  }
+  state.locked[i] = !state.locked[i];
+  renderDice();
+}
+
+function lockAllDice(){
+  if(state.paused) return;
+  if(state.dice.some(f => f === "❔")) return;
+  for(let i=0;i<DICE_COUNT;i++) state.locked[i] = true;
+  renderDice();
+  updateButtons();
+}
+
+function settleRound(){
+  const { combo, score } = bestCombo(state.dice);
+  state.totalScore += score;
+  state.bestCombo = combo;
+
+  renderHUD();
+  renderScoreboard();
+
+  if(combo && score > 0){
+    setFeedback(`✨ 达成「${combo.label}」+${score} 分！`, true);
+  } else {
+    setFeedback("本回合未达成组合，+0 分");
+  }
+
+  // 进入下一回合
+  state.round++;
+  state.rollsLeft = MAX_ROLLS;
+  state.locked = state.locked.map(()=>false);
+  state.dice = state.dice.map(()=>"❔");
+
+  setTimeout(()=>{
+    renderDice();
+    renderHUD();
+    updateButtons();
+  }, 800);
+}
+
+/* ============================================================
+   渲染
+   ============================================================ */
+function renderDice(){
+  const row = document.getElementById("dice-row");
+  row.innerHTML = "";
+  state.dice.forEach((face, i) => {
+    const el = document.createElement("div");
+    el.className = "die" + (state.locked[i] ? " locked" : "");
+    el.textContent = face;
+    el.onclick = () => toggleLock(i);
+    row.appendChild(el);
+  });
+}
+
+function renderHUD(){
+  // 当前英雄显示（名称 + 迷你头像）
+  const heroEl = document.getElementById("hud-hero");
+  if(heroEl){
+    const h = state.currentHero;
+    heroEl.innerHTML = `<span class="mini-avatar">${h.faces[0]}</span>${h.name}`;
+  }
+  document.getElementById("hud-round").textContent = state.round;
+  document.getElementById("hud-rolls").textContent = state.rollsLeft;
+  document.getElementById("hud-score").textContent = state.totalScore;
+  const rank = currentRank(state.totalScore);
+  document.getElementById("hud-best").textContent = state.bestCombo ? state.bestCombo.label : rank.name;
+}
+
+function renderScoreboard(){
+  const body = document.getElementById("scoreboard-body");
+  body.innerHTML = "";
+  COMBOS.forEach(combo => {
+    const tr = document.createElement("tr");
+    const achieved = state.bestCombo && state.bestCombo.key === combo.key;
+    if(achieved) tr.className = "achieved";
+    tr.innerHTML = `
+      <td class="combo">${combo.label}</td>
+      <td>${combo.desc}</td>
+      <td>${combo.test(state.dice.filter(f=>f!=="❔")) || 0}</td>
+      <td>${achieved ? "✓ 已达成" : "—"}</td>
+    `;
+    body.appendChild(tr);
+  });
+}
+
+function setFeedback(msg, flash=false){
+  const el = document.getElementById("feedback");
+  el.textContent = msg;
+  if(flash){
+    el.classList.remove("flash");
+    void el.offsetWidth;
+    el.classList.add("flash");
+  }
+}
+
+function updateButtons(){
+  const rollBtn = document.getElementById("btn-roll");
+  rollBtn.disabled = state.paused || state.rollsLeft <= 0;
+  document.getElementById("btn-lock").disabled = state.paused;
+}
+
+/* ============================================================
+   初始化
+   ============================================================ */
+document.querySelectorAll(".nav button").forEach(b => b.addEventListener("click", () => switchView(b.dataset.view)));
+renderHeroSelect();
+renderHUD();
+renderScoreboard();
+updateButtons();
+</script>
+</body>
+</html>

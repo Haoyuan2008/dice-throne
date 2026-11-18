@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>王权骰铸 · 联机对战</title>
+<style>
+/* ============================================================
+   主题变量（暖色调）
+   ============================================================ */
+:root{
+  --bg-cream: #f7efe2;
+  --bg-panel: rgba(255, 250, 240, 0.94);
+  --amber: #d88a3a;
+  --amber-deep: #b96f2a;
+  --caramel: #a9622b;
+  --warm-brown: #4a3423;
+  --terra: #c8754a;
+  --peach: #f2a67a;
+  --gold: #e6b24a;
+  --text: #4a3423;
+  --text-soft: #7a6048;
+  --line: rgba(169, 98, 43, 0.25);
+  --shadow: 0 8px 30px rgba(74, 52, 35, 0.18);
+  --radius: 18px;
+  --font: "Segoe UI", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  --red: #c0392b;
+  --green: #27ae60;
+}
+*{ box-sizing: border-box; margin: 0; padding: 0; }
+html, body{ font-family: var(--font); color: var(--text); min-height: 100%; }
+body{ position: relative; min-height: 100vh; background: var(--bg-cream); }
+body::before{
+  content:""; position:fixed; inset:0; z-index:-2;
+  background:url("assets/A_warm__cozy_fantasy_board_gam_2026-11-18T11-38-50.png") center/cover no-repeat;
+  filter:saturate(1.05) brightness(1.02);
+}
+body::after{
+  content:""; position:fixed; inset:0; z-index:-1;
+  background:linear-gradient(180deg, rgba(247,239,226,0.55) 0%, rgba(247,239,226,0.85) 100%);
+}
+
+.page{ max-width: 1040px; margin: 0 auto; padding: 28px 20px 60px; display:flex; flex-direction:column; gap:22px; }
+
+/* 顶部导航 */
+.topbar{ display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; }
+.brand{ display:flex; align-items:center; gap:12px; }
+.brand .logo{
+  width:46px; height:46px; border-radius:50%;
+  background:radial-gradient(circle at 35% 30%, #f2c67a, var(--gold) 60%, var(--amber-deep));
+  display:grid; place-items:center; font-size:24px; box-shadow:var(--shadow);
+}
+.brand h1{ font-size:22px; letter-spacing:1px; }
+.brand .sub{ font-size:12px; color:var(--text-soft); }
+.nav{ display:flex; gap:8px; flex-wrap:wrap; }
+.nav button{
+  border:1px solid var(--line); background:var(--bg-panel); color:var(--text);
+  padding:9px 16px; border-radius:999px; cursor:pointer; font-size:14px; transition:.18s;
+}
+.nav button:hover{ background:#fff; box-shadow:var(--shadow); }
+.nav button.active{ background:var(--warm-brown); color:#fff7ea; border-color:var(--warm-brown); }
+
+.panel{
+  background:var(--bg-panel); border:1px solid var(--line);
+  border-radius:var(--radius); box-shadow:var(--shadow); padding:24px; backdrop-filter:blur(6px);
+}
+
+/* 按钮 */
+.btn{
+  border:none; cursor:pointer; font-family:inherit; font-weight:600;
+  border-radius:999px; padding:13px 28px; font-size:15px; transition:.18s;
+}
+.btn-primary{ background:linear-gradient(135deg, var(--amber), var(--amber-deep)); color:#fff7ea; box-shadow:0 6px 18px rgba(217,138,58,.4); }
+.btn-primary:hover{ transform:translateY(-2px); }
+.btn-ghost{ background:transparent; border:1.5px solid var(--amber-deep); color:var(--amber-deep); }
+.btn-ghost:hover{ background:rgba(217,138,58,.1); }
+.btn:disabled{ opacity:.45; cursor:not-allowed; transform:none; }
+.btn-sm{ padding:9px 18px; font-size:13px; }
+
+/* 首页 */
+.hero{ text-align:center; padding:46px 24px; }
+.hero h2{ font-size:32px; margin-bottom:10px; }
+.hero p.tagline{ color:var(--text-soft); font-size:16px; max-width:560px; margin:0 auto 26px; line-height:1.7; }
+.hero .cta{ display:inline-flex; gap:12px; flex-wrap:wrap; justify-content:center; }
+.features{ display:grid; grid-template-columns:repeat(auto-fit, minmax(200px,1fr)); gap:14px; margin-top:30px; text-align:left; }
+.feature{ background:rgba(255,255,255,.5); border:1px solid var(--line); border-radius:14px; padding:16px; }
+.feature .ico{ font-size:26px; }
+.feature h4{ margin:8px 0 4px; font-size:15px; }
+.feature p{ font-size:13px; color:var(--text-soft); line-height:1.6; }
+
+/* 视图切换 */
+.view{ display:none; }
+.view.visible{ display:block; }
+
+/* 大厅 / 选择英雄 */
+.select-sub{ color:var(--text-soft); font-size:14px; margin-bottom:18px; }
+.select-group-title{ font-size:15px; font-weight:700; color:var(--caramel); margin:22px 0 12px; display:flex; align-items:center; gap:8px; }
+.select-group-title .count{ font-size:12px; font-weight:600; color:var(--text-soft); background:rgba(169,98,43,.12); border-radius:999px; padding:2px 10px; }
+.hero-grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(150px,1fr)); gap:12px; }
+.hero-card{
+  background:rgba(255,255,255,.55); border:2px solid var(--line); border-radius:14px;
+  padding:14px 12px; text-align:center; cursor:pointer; transition:.16s; user-select:none;
+}
+.hero-card:hover{ transform:translateY(-3px); box-shadow:var(--shadow); border-color:var(--amber); }
+.hero-card.selected{ border-color:var(--amber-deep); background:linear-gradient(145deg,#fff8e8,#f6dca8); box-shadow:0 0 0 3px rgba(217,138,58,.25); }
+.hero-card .avatar{ width:56px; height:56px; margin:0 auto 8px; border-radius:50%; display:grid; place-items:center; font-size:28px; background:radial-gradient(circle at 35% 30%, #f2c67a, var(--gold) 60%, var(--amber-deep)); box-shadow:0 3px 10px rgba(74,52,35,.2); }
+.hero-card .hname{ font-size:15px; font-weight:700; margin-bottom:2px; }
+.hero-card .hen{ font-size:11px; color:var(--text-soft); margin-bottom:6px; }
+.hero-card .hrole{ font-size:12px; color:var(--caramel); line-height:1.5; }
+.hero-card .hdiff{ display:inline-block; margin-top:6px; font-size:11px; font-weight:600; color:var(--amber-deep); }
+
+/* 大厅输入区 */
+.lobby-input{
+  display:flex; gap:12px; flex-wrap:wrap; align-items:center; margin:18px 0;
+}
+.lobby-input input{
+  flex:1; min-width:200px; padding:12px 16px; font-size:15px;
+  border:1.5px solid var(--line); border-radius:12px; background:#fffdf7; font-family:inherit; color:var(--text);
+}
+.lobby-input input:focus{ outline:none; border-color:var(--amber-deep); }
+
+/* 游戏区 HUD */
+.hud{ display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px; margin-bottom:20px; }
+.hud-stat{ text-align:center; min-width:80px; }
+.hud-stat .num{ font-size:28px; font-weight:700; color:var(--amber-deep); }
+.hud-stat .lbl{ font-size:12px; color:var(--text-soft); }
+.hud-hero{ display:flex; align-items:center; gap:8px; font-weight:700; color:var(--warm-brown); }
+.hud-hero .mini-avatar{ width:34px; height:34px; border-radius:50%; display:grid; place-items:center; font-size:18px; background:radial-gradient(circle at 35% 30%, #f2c67a, var(--gold) 60%, var(--amber-deep)); }
+
+/* 玩家血条列表 */
+.players-row{ display:flex; gap:14px; flex-wrap:wrap; margin-bottom:20px; }
+.player-card{
+  flex:1; min-width:150px; border:2px solid var(--line); border-radius:14px; padding:14px; text-align:center; background:rgba(255,255,255,.5); position:relative;
+}
+.player-card.active{ border-color:var(--amber-deep); box-shadow:0 0 0 3px rgba(217,138,58,.25); background:linear-gradient(145deg,#fff8e8,#f6dca8); }
+.player-card.dead{ opacity:.5; }
+.player-card .pname{ font-weight:700; font-size:14px; margin-bottom:2px; }
+.player-card .phero{ font-size:12px; color:var(--text-soft); margin-bottom:8px; }
+.player-card .ptag{ position:absolute; top:8px; right:8px; font-size:10px; font-weight:700; padding:2px 8px; border-radius:999px; background:var(--terra); color:#fff; }
+.player-card .ptag.you{ background:var(--amber-deep); }
+.player-card .ptag.ai{ background:#8e6f4e; }
+.player-card .kick-btn{
+  display:none;
+  margin-top:8px;
+  border:1px solid var(--red); color:var(--red); background:transparent;
+  border-radius:999px; padding:4px 12px; font-size:12px; cursor:pointer; font-weight:600;
+  transition:.15s;
+}
+.player-card .kick-btn:hover{ background:rgba(192,57,43,.1); }
+.player-card .kick-btn.visible{ display:inline-block; }
+.hp-bar{ height:10px; background:rgba(74,52,35,.12); border-radius:999px; overflow:hidden; margin-top:6px; }
+.hp-bar .fill{ height:100%; background:linear-gradient(90deg, var(--red), var(--amber)); transition:width .4s; border-radius:999px; }
+.hp-num{ font-size:13px; font-weight:700; margin-top:4px; }
+
+/* 反馈条 */
+.score-feedback{ min-height:34px; text-align:center; font-size:15px; font-weight:600; color:var(--caramel); margin-bottom:16px; }
+.score-feedback.flash{ animation:pop .4s ease; }
+@keyframes pop{ 0%{transform:scale(.9);opacity:.4} 100%{transform:scale(1);opacity:1} }
+
+/* 骰子 */
+.dice-row{ display:flex; justify-content:center; flex-wrap:wrap; gap:18px; margin:18px 0 26px; }
+.die{
+  width:74px; height:74px; border-radius:16px;
+  background:linear-gradient(145deg, #fffdf7, #f0e2c8); border:2px solid var(--line);
+  box-shadow:0 5px 14px rgba(74,52,35,.15); display:grid; place-items:center;
+  font-size:38px; cursor:pointer; user-select:none; transition:.15s; position:relative;
+}
+.die.locked{ border:3px solid var(--amber-deep); box-shadow:0 0 0 4px rgba(217,138,58,.25); background:linear-gradient(145deg,#fff8e8,#f6dca8); }
+.die.locked::after{ content:"锁定"; position:absolute; bottom:-20px; font-size:11px; color:var(--amber-deep); font-weight:600; }
+.die.rolling{ animation:shake .5s ease; }
+@keyframes shake{
+  0%{transform:translate(0,0) rotate(0)} 25%{transform:translate(-4px,2px) rotate(-6deg)}
+  50%{transform:translate(4px,-2px) rotate(6deg)} 75%{transform:translate(-3px,-1px) rotate(-4deg)}
+  100%{transform:translate(0,0) rotate(0)}
+}
+
+.controls{ display:flex; justify-content:center; flex-wrap:wrap; gap:12px; }
+
+/* 计分/伤害表 */
+.scoreboard{ margin-top:26px; overflow-x:auto; }
+.scoreboard table{ width:100%; border-collapse:collapse; font-size:14px; }
+.scoreboard th, .scoreboard td{ padding:10px 12px; text-align:center; border-bottom:1px solid var(--line); }
+.scoreboard th{ background:rgba(217,138,58,.12); color:var(--caramel); font-weight:600; }
+.scoreboard tr.achieved td{ background:rgba(230,178,74,.18); color:var(--amber-deep); font-weight:600; }
+.scoreboard td.combo{ text-align:left; }
+
+/* 规则区 */
+.rules-area h2{ margin-bottom:16px; font-size:24px; }
+.rules-area h3{ margin:20px 0 8px; font-size:17px; color:var(--caramel); }
+.rules-area p, .rules-area li{ font-size:14px; line-height:1.8; }
+.rules-area ul, .rules-area ol{ padding-left:22px; }
+.rules-area .note{ margin-top:20px; padding:14px 18px; background:rgba(230,178,74,.15); border-left:4px solid var(--gold); border-radius:8px; font-size:13px; color:var(--caramel); }
+.rules-area code{ background:rgba(169,98,43,.12); padding:2px 7px; border-radius:5px; font-size:13px; }
+
+.replacetag{
+  display:inline-block; font-size:11px; font-weight:600; color:var(--terra);
+  background:rgba(200,117,74,.14); border:1px dashed var(--terra); border-radius:6px; padding:1px 7px; margin-left:6px; vertical-align:middle;
+}
+
+/* 房间信息条 */
+.room-info{ display:flex; align-items:center; justify-content:center; gap:12px; flex-wrap:wrap; margin-bottom:8px; font-size:14px; color:var(--text-soft); }
+.room-info .code{ font-weight:800; font-size:20px; letter-spacing:2px; color:var(--amber-deep); }
+
+footer{ text-align:center; font-size:12px; color:var(--text-soft); margin-top:10px; }
+
+@media (max-width:600px){
+  .hero h2{ font-size:26px; }
+  .die{ width:60px; height:60px; font-size:30px; border-radius:13px; }
+  .dice-row{ gap:12px; }
+  .panel{ padding:18px; }
+  .brand h1{ font-size:18px; }
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- ===== 顶部导航 ===== -->
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo">👑</div>
+      <div>
+        <h1>王权骰铸</h1>
+        <div class="sub">Dice Throne · 联机对战</div>
+      </div>
+    </div>
+    <nav class="nav" id="nav">
+      <button data-view="home" class="active">首页</button>
+      <button data-view="lobby">对战大厅</button>
+      <button data-view="rules">规则说明</button>
+    </nav>
+  </header>
+
+  <!-- ===== 首页 ===== -->
+  <section class="panel hero view" id="view-home">
+    <h2>掷出你的王权之路</h2>
+    <p class="tagline">
+      创建房间号，邀请好友加入；或添加人机陪练。选择你的英雄，掷骰凑出强力组合，
+      削减对手生命值，成为最后的王座赢家。
+    </p>
+    <div class="cta">
+      <button class="btn btn-primary" onclick="goLobby()">⚔️ 进入对战大厅</button>
+      <button class="btn btn-ghost" onclick="switchView('rules')">📖 查看规则</button>
+    </div>
+    <div class="features">
+      <div class="feature"><div class="ico">🎲</div><h4>掷骰对战</h4><p>每回合最多 3 次掷骰，锁定骰面凑出组合，转化为伤害。</p></div>
+      <div class="feature"><div class="ico">🔢</div><h4>房间联机</h4><p>创建房间号，好友输入相同号码即可加入同局对战。</p></div>
+      <div class="feature"><div class="ico">🤖</div><h4>人机陪练</h4><p>房主可添加人机对手，AI 自动掷骰出招。</p></div>
+      <div class="feature"><div class="ico">👑</div><h4>十六英雄</h4><p>第一季、第二季共 16 名英雄可选，各具风格。</p></div>
+    </div>
+  </section>
+
+  <!-- ===== 对战大厅 ===== -->
+  <section class="panel view" id="view-lobby">
+    <h2 style="font-size:24px;margin-bottom:6px;">对战大厅</h2>
+    <p class="select-sub">选择你的英雄，然后创建房间或加入好友的房间（支持 2–6 人，可添加人机）。</p>
+
+    <h3 class="select-group-title" style="margin-top:8px;">第一步 · 选择英雄</h3>
+    <div id="hero-select-groups"></div>
+
+    <h3 class="select-group-title">第二步 · 创建或加入房间</h3>
+    <div class="lobby-input">
+      <input id="nickname" type="text" placeholder="你的昵称（默认"玩家"）" maxlength="12">
+    </div>
+    <div class="controls" style="justify-content:flex-start;">
+      <button class="btn btn-primary" onclick="createRoom()">🔢 创建房间</button>
+      <button class="btn btn-ghost" onclick="showJoin()">🚪 加入房间</button>
+    </div>
+    <div class="lobby-input" id="join-box" style="display:none;">
+      <input id="join-code" type="text" placeholder="输入 6 位房间号" maxlength="6" style="text-transform:uppercase;letter-spacing:2px;">
+      <button class="btn btn-primary btn-sm" onclick="joinRoom()">加入</button>
+    </div>
+  </section>
+
+  <!-- ===== 游戏区 ===== -->
+  <section class="panel view" id="view-game">
+    <div class="room-info">
+      房间号 <span class="code" id="room-code">—</span>
+      <span id="room-status" style="color:var(--caramel);font-weight:600;"></span>
+    </div>
+
+    <div class="players-row" id="players-row"></div>
+
+    <div class="hud">
+      <div class="hud-stat">
+        <div class="hud-hero" id="hud-hero">—</div>
+        <div class="lbl">我的英雄</div>
+      </div>
+      <div class="hud-stat">
+        <div class="num" id="hud-rolls">3</div>
+        <div class="lbl">剩余掷骰</div>
+      </div>
+      <div class="hud-stat">
+        <div class="num" id="hud-hp">50</div>
+        <div class="lbl">我的生命</div>
+      </div>
+    </div>
+
+    <div class="score-feedback" id="feedback">等待其他玩家加入…</div>
+
+    <div class="dice-row" id="dice-row"></div>
+
+    <div class="controls">
+      <button class="btn btn-primary" id="btn-roll" onclick="rollDice()">🎲 掷骰</button>
+      <button class="btn btn-ghost" id="btn-lock" onclick="lockAllDice()">🔒 全部锁定</button>
+      <button class="btn btn-ghost" id="btn-endturn" onclick="endTurn()">⏭ 结束回合</button>
+      <button class="btn btn-ghost" id="btn-addai" onclick="addAI()">🤖 添加人机</button>
+      <button class="btn btn-ghost" id="btn-start" onclick="startGame()">🚀 开始对战</button>
+      <button class="btn btn-ghost" id="btn-leave" onclick="leaveRoom()">🚪 离开</button>
+    </div>
+
+    <div class="scoreboard">
+      <table>
+        <thead><tr><th class="combo">组合</th><th>条件</th><th>伤害</th><th>说明</th></tr></thead>
+        <tbody id="scoreboard-body"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ===== 规则说明 ===== -->
+  <section class="panel view rules-area" id="view-rules">
+    <h2>规则说明</h2>
+    <h3>🎯 目标</h3>
+    <p>掷骰凑出组合，转化为伤害削减对手生命值（HP）。先将对手 HP 打到 0 的一方获胜；多人局最后存活者胜。</p>
+    <h3>🎲 回合流程</h3>
+    <ol>
+      <li>轮到你的回合时，有 <strong>3 次掷骰机会</strong>。</li>
+      <li>每次掷骰后可点击骰子「锁定」保留，重掷其余。</li>
+      <li>掷骰结束后，系统按最终骰面结算组合，转化为对目标的伤害。</li>
+      <li>结算后轮到下一位玩家。</li>
+    </ol>
+    <h3>⭐ 组合与伤害 <span class="replacetag">可替换模块</span></h3>
+    <ul>
+      <li>五条(50)、四条(25)、葫芦(20)、三条(15)、两对(10)、一对(5)。</li>
+      <li>伤害＝组合分数，直接削减目标 HP。</li>
+      <li>具体见游戏区伤害表。</li>
+    </ul>
+    <h3>🔢 联机与人机</h3>
+    <ul>
+      <li>房主创建 6 位房间号，好友输入相同号码加入。</li>
+      <li>支持 2–6 人；房主可「添加人机」，AI 自动掷骰出招。</li>
+      <li>所有玩家到齐后，房主点击「开始对战」。</li>
+    </ul>
+    <h3>🔒 成员剔除权限</h3>
+    <ul>
+      <li>创建房间者自动成为<strong>房主</strong>，拥有剔除权限。</li>
+      <li>仅房主可在成员列表点击「移除」移除其他成员；普通成员无此权限。</li>
+      <li>房主<strong>不能移除自己</strong>。</li>
+      <li>仅在对战开始前（等待阶段）可移除；对战中不可移除。</li>
+      <li>被移除的成员会收到提示并退回大厅。</li>
+    </ul>
+    <h3>⚔️ 十六英雄 <span class="replacetag">可替换模块</span></h3>
+    <ul>
+      <li><strong>第一季</strong>：野蛮人、月精灵、火法师、暗影盗贼、武僧、圣武士、忍者、树人。</li>
+      <li><strong>第二季</strong>：枪手、武士、战术家、女猎手、诅咒海盗、工匠、炽天使、吸血鬼领主。</li>
+    </ul>
+    <div class="note">
+      <strong>说明：</strong>本版为联机 HP 对战初版。组合分值、伤害换算、英雄骰面等均为可替换参数，集中在脚本区 <code>HEROES</code> 与 <code>COMBOS</code> 中。
+    </div>
+  </section>
+
+  <footer>王权骰铸 · Dice Throne 联机对战 · 房间制 · 支持人机</footer>
+</div>
+
+<!-- 云服务配置（与逻辑分离） -->
+<script src="config.js"></script>
+<!-- 云服务 SDK -->
+<script src="https://cdn.jsdelivr.net/npm/@tencent-ai/workbuddy-cloud-sdk@dev/lib/index.global.js"></script>
+
+<script>
+/* ============================================================
+   云服务初始化（房间联机后端）
+   ============================================================ */
+let cloud = null;
+try {
+  cloud = WorkBuddyCloud.createWorkBuddyCloud({
+    endpoint: window.PUBLIC_CONFIG.endpoint,
+    oauthRelayBaseUrl: window.PUBLIC_CONFIG.oauthRelayBaseUrl,
+    publishableKey: window.PUBLIC_CONFIG.publishableKey,
+  });
+} catch(e) {
+  console.error("云服务初始化失败", e);
+}
+
+/* ============================================================
+   英雄数据（第一季 8 + 第二季 8 = 16 名）
+   ============================================================ */
+const HEROES = [
+  // 第一季
+  { id:"barbarian",   name:"野蛮人",    en:"Barbarian",      season:1, faces:["⚔️","❤️","⭐"],   diff:2 },
+  { id:"moonelf",     name:"月精灵",    en:"Moon Elf",       season:1, faces:["🏹","👣","🌙"],   diff:3 },
+  { id:"pyromancer",  name:"火法师",    en:"Pyromancer",     season:1, faces:["🔥","💥","🔥","☄️"], diff:3 },
+  { id:"shadowthief", name:"暗影盗贼",  en:"Shadow Thief",   season:1, faces:["🗡️","💰","🃏","🌑"], diff:4 },
+  { id:"monk",        name:"武僧",      en:"Monk",           season:1, faces:["👊","🌀","☯️"],   diff:4 },
+  { id:"paladin",     name:"圣武士",    en:"Paladin",        season:1, faces:["⚔️","🛡️","✨"],   diff:3 },
+  { id:"ninja",       name:"忍者",      en:"Ninja",          season:1, faces:["🥷","🗡️","💨"],   diff:4 },
+  { id:"treant",      name:"树人",      en:"Treant",         season:1, faces:["🌳","🌿","🛡️"],   diff:3 },
+  // 第二季
+  { id:"gunslinger",  name:"枪手",      en:"Gunslinger",     season:2, faces:["🔫","💨","🎯"],   diff:4 },
+  { id:"samurai",     name:"武士",      en:"Samurai",        season:2, faces:["⚔️","🗡️","🎖️"],   diff:3 },
+  { id:"tactician",   name:"战术家",    en:"Tactician",      season:2, faces:["🗺️","📐","⚙️"],   diff:5 },
+  { id:"huntress",    name:"女猎手",    en:"Huntress",       season:2, faces:["🗡️","🦁","🏹"],   diff:5 },
+  { id:"cursedpirate",name:"诅咒海盗",  en:"Cursed Pirate",  season:2, faces:["🏴‍☠️","💰","💀"],   diff:4 },
+  { id:"artificer",   name:"工匠",      en:"Artificer",      season:2, faces:["⚙️","🤖","🔧"],   diff:4 },
+  { id:"seraph",      name:"炽天使",    en:"Seraph",         season:2, faces:["😇","✨","🕊️"],   diff:4 },
+  { id:"vampirelord", name:"吸血鬼领主",en:"Vampire Lord",   season:2, faces:["🧛","🩸","🦇"],   diff:4 },
+];
+
+/* ============================================================
+   组合伤害规则（可替换）
+   ============================================================ */
+const COMBOS = [
+  { key:"five",   label:"五条 · 至高王权", desc:"五个相同骰面", dmg:50 },
+  { key:"four",   label:"四条 · 王座之约", desc:"四个相同骰面", dmg:25 },
+  { key:"full",   label:"葫芦 · 宫廷联姻", desc:"三条 + 一对",  dmg:20 },
+  { key:"three",  label:"三条 · 骑士之誓", desc:"三个相同骰面", dmg:15 },
+  { key:"twopair",label:"两对 · 双翼",    desc:"两个对子",     dmg:10 },
+  { key:"pair",   label:"一对 · 起步",    desc:"两个相同骰面", dmg:5 },
+];
+
+const MAX_ROLLS = 3;
+const DICE_COUNT = 5;
+const MAX_HP = 50;
+
+/* ============================================================
+   游戏状态
+   ============================================================ */
+const state = {
+  view: "home",
+  currentHero: HEROES[0],
+  nickname: "玩家",
+  // 房间
+  roomCode: null,
+  roomId: null,      // 房间表主键（用 room_code 作为 id 即可，这里存 room_code）
+  myPlayerId: null,  // 本玩家在 players 数组中的 id
+  // 回合内
+  dice: [],
+  locked: [],
+  rollsLeft: MAX_ROLLS,
+  // 轮询
+  pollTimer: null,
+};
+
+/* ============================================================
+   工具函数
+   ============================================================ */
+function randFace(){
+  const pool = state.currentHero.faces;
+  return pool[Math.floor(Math.random()*pool.length)];
+}
+function countMost(faces){
+  const c = {};
+  faces.forEach(f => c[f] = (c[f]||0)+1);
+  return Math.max(0, ...Object.values(c));
+}
+function isFullHouse(faces){
+  const c = {};
+  faces.forEach(f => c[f] = (c[f]||0)+1);
+  const vals = Object.values(c).sort();
+  return vals.length === 2 && vals[0] === 2 && vals[1] === 3;
+}
+function isTwoPair(faces){
+  const c = {};
+  faces.forEach(f => c[f] = (c[f]||0)+1);
+  return Object.values(c).filter(v => v === 2).length >= 2;
+}
+function calcCombo(faces){
+  if(faces.length < DICE_COUNT) return { combo:null, dmg:0 };
+  // 按优先级找最高组合
+  if(countMost(faces) >= 5) return { combo:COMBOS[0], dmg:COMBOS[0].dmg };
+  if(countMost(faces) >= 4) return { combo:COMBOS[1], dmg:COMBOS[1].dmg };
+  if(isFullHouse(faces)) return { combo:COMBOS[2], dmg:COMBOS[2].dmg };
+  if(countMost(faces) >= 3) return { combo:COMBOS[3], dmg:COMBOS[3].dmg };
+  if(isTwoPair(faces)) return { combo:COMBOS[4], dmg:COMBOS[4].dmg };
+  if(countMost(faces) >= 2) return { combo:COMBOS[5], dmg:COMBOS[5].dmg };
+  return { combo:null, dmg:0 };
+}
+function genRoomCode(){
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // 去易混淆字符
+  let s = "";
+  for(let i=0;i<6;i++) s += chars[Math.floor(Math.random()*chars.length)];
+  return s;
+}
+
+/* ============================================================
+   视图切换
+   ============================================================ */
+function switchView(view){
+  state.view = view;
+  document.querySelectorAll(".nav button").forEach(b => b.classList.toggle("active", b.dataset.view === view));
+  document.querySelectorAll(".view").forEach(el => el.classList.remove("visible"));
+  const el = document.getElementById("view-" + view);
+  if(el) el.classList.add("visible");
+  if(view === "lobby") renderHeroSelect();
+}
+function goLobby(){ switchView("lobby"); }
+
+/* ============================================================
+   英雄选择
+   ============================================================ */
+function renderHeroSelect(){
+  const container = document.getElementById("hero-select-groups");
+  container.innerHTML = "";
+  [1,2].forEach(season => {
+    const list = HEROES.filter(h => h.season === season);
+    const titleEl = document.createElement("div");
+    titleEl.className = "select-group-title";
+    titleEl.innerHTML = `${season===1?"第一季 Season One":"第二季 Season Two"} <span class="count">${list.length} 名</span>`;
+    container.appendChild(titleEl);
+
+    const grid = document.createElement("div");
+    grid.className = "hero-grid";
+    list.forEach(hero => {
+      const card = document.createElement("div");
+      card.className = "hero-card" + (state.currentHero.id === hero.id ? " selected" : "");
+      card.innerHTML = `
+        <div class="avatar">${hero.faces[0]}</div>
+        <div class="hname">${hero.name}</div>
+        <div class="hen">${hero.en}</div>
+        <div class="hdiff">难度 ${"★".repeat(hero.diff)}</div>
+      `;
+      card.onclick = () => { state.currentHero = hero; renderHeroSelect(); };
+      grid.appendChild(card);
+    });
+    container.appendChild(grid);
+  });
+}
+
+/* ============================================================
+   房间操作（云数据库）
+   ============================================================ */
+async function createRoom(){
+  if(!cloud){ alert("云服务未就绪，请稍后刷新重试"); return; }
+  const nick = document.getElementById("nickname").value.trim() || "玩家";
+  state.nickname = nick;
+
+  // 尝试创建唯一房间号
+  for(let attempt=0; attempt<10; attempt++){
+    const code = genRoomCode();
+    const players = [{
+      id: "p_" + Date.now().toString(36) + Math.random().toString(36).slice(2,6),
+      name: nick,
+      heroId: state.currentHero.id,
+      heroName: state.currentHero.name,
+      avatar: state.currentHero.faces[0],
+      hp: MAX_HP,
+      isAI: false,
+      isHost: true,
+      alive: true,
+    }];
+    const { data, error } = await cloud.database.from("rooms").insert({
+      id: code, room_code: code, host_name: nick, host_hero: state.currentHero.id,
+      players: players, ai_count: 0, status: "waiting",
+      current_turn: 0, turn_rolls_left: MAX_ROLLS, turn_locked: [], turn_dice: [],
+    }).select();
+    if(!error && data && data.length){
+      state.roomCode = code;
+      state.roomId = code;
+      state.myPlayerId = players[0].id;
+      switchView("game");
+      setFeedback("房间已创建，等待玩家加入…");
+      startPolling();
+      return;
+    }
+    // 房间号冲突则重试
+  }
+  alert("创建房间失败，请重试");
+}
+
+async function joinRoom(){
+  if(!cloud){ alert("云服务未就绪"); return; }
+  const code = document.getElementById("join-code").value.trim().toUpperCase();
+  if(!code){ alert("请输入房间号"); return; }
+  const nick = document.getElementById("nickname").value.trim() || "玩家";
+  state.nickname = nick;
+
+  const { data, error } = await cloud.database.from("rooms").select("*").eq("room_code", code).maybeSingle();
+  if(error || !data){
+    alert("未找到该房间，请检查房间号");
+    return;
+  }
+  if(data.status !== "waiting"){
+    alert("该房间已开始对战，无法加入");
+    return;
+  }
+  let players = data.players || [];
+  if(players.length >= 6){
+    alert("房间已满（最多 6 人）");
+    return;
+  }
+  const newPlayer = {
+    id: "p_" + Date.now().toString(36) + Math.random().toString(36).slice(2,6),
+    name: nick,
+    heroId: state.currentHero.id,
+    heroName: state.currentHero.name,
+    avatar: state.currentHero.faces[0],
+    hp: MAX_HP, isAI: false, isHost: false, alive: true,
+  };
+  players.push(newPlayer);
+
+  const upd = await cloud.database.from("rooms").update({ players }).eq("room_code", code);
+  if(upd.error){ alert("加入失败，请重试"); return; }
+
+  state.roomCode = code;
+  state.roomId = code;
+  state.myPlayerId = newPlayer.id;
+  switchView("game");
+  setFeedback("已加入房间，等待开始…");
+  startPolling();
+}
+
+async function addAI(){
+  if(!state.roomCode) return;
+  const { data } = await cloud.database.from("rooms").select("*").eq("room_code", state.roomCode).maybeSingle();
+  if(!data || data.status !== "waiting"){ setFeedback("只能在等待阶段添加人机"); return; }
+  if((data.players||[]).length >= 6){ setFeedback("房间已满"); return; }
+  const aiHero = HEROES[Math.floor(Math.random()*HEROES.length)];
+  const aiPlayer = {
+    id: "ai_" + Date.now().toString(36) + Math.random().toString(36).slice(2,6),
+    name: "人机" + (data.ai_count + 1),
+    heroId: aiHero.id, heroName: aiHero.name, avatar: aiHero.faces[0],
+    hp: MAX_HP, isAI: true, isHost: false, alive: true,
+  };
+  const players = [...(data.players||[]), aiPlayer];
+  await cloud.database.from("rooms").update({ players, ai_count: data.ai_count + 1 }).eq("room_code", state.roomCode);
+  setFeedback(`已添加人机「${aiPlayer.name}」`);
+}
+
+async function startGame(){
+  if(!state.roomCode) return;
+  const { data } = await cloud.database.from("rooms").select("*").eq("room_code", state.roomCode).maybeSingle();
+  if(!data) return;
+  if((data.players||[]).length < 2){ setFeedback("至少需要 2 名玩家才能开始"); return; }
+  // 检查自己是不是房主
+  const me = (data.players||[]).find(p => p.id === state.myPlayerId);
+  if(!me || !me.isHost){ setFeedback("只有房主可以开始对战"); return; }
+  await cloud.database.from("rooms").update({ status:"playing", current_turn:0 }).eq("room_code", state.roomCode);
+  setFeedback("对战开始！");
+}
+
+/* ============================================================
+   成员剔除（房主权限）
+   ============================================================ */
+async function kickPlayer(targetId){
+  if(!state.roomCode){ return; }
+  // 1. 拉取最新房间状态
+  const { data } = await cloud.database.from("rooms").select("*").eq("room_code", state.roomCode).maybeSingle();
+  if(!data){ return; }
+
+  // 2. 权限校验（服务端语义由 RLS 保证公开写，此处做业务层校验）
+  const players = data.players || [];
+  const me = players.find(p => p.id === state.myPlayerId);
+  const target = players.find(p => p.id === targetId);
+
+  // 2a. 仅房主可移除
+  if(!me || !me.isHost){ setFeedback("只有房主可以移除成员"); return; }
+  // 2b. 房主不能移除自己
+  if(targetId === state.myPlayerId){ setFeedback("不能移除自己"); return; }
+  // 2c. 目标必须存在
+  if(!target){ setFeedback("该成员不存在或已离开"); return; }
+  // 2d. 仅等待阶段可移除（对战中不允许，避免破坏进行中的对局）
+  if(data.status !== "waiting"){ setFeedback("对战中无法移除成员"); return; }
+
+  // 3. 二次确认
+  if(!confirm(`确定要移除「${target.name}」吗？`)) return;
+
+  // 4. 移除目标：更新 players 数组
+  const newPlayers = players.filter(p => p.id !== targetId);
+  // 若移除的是人机，同步 ai_count
+  const newAiCount = target.isAI ? Math.max(0, (data.ai_count||0) - 1) : (data.ai_count||0);
+
+  const upd = await cloud.database.from("rooms").update({
+    players: newPlayers,
+    ai_count: newAiCount,
+  }).eq("room_code", state.roomCode);
+
+  if(upd.error){ setFeedback("移除失败，请重试"); return; }
+  setFeedback(`已移除「${target.name}」`, true);
+}
+
+async function leaveRoom(){
+  if(state.pollTimer){ clearInterval(state.pollTimer); state.pollTimer = null; }
+  state.roomCode = null; state.roomId = null; state.myPlayerId = null;
+  state.dice = []; state.locked = [];
+  switchView("lobby");
+}
+
+/* ============================================================
+   轮询同步
+   ============================================================ */
+function startPolling(){
+  if(state.pollTimer) clearInterval(state.pollTimer);
+  state.pollTimer = setInterval(pollRoom, 1200);
+}
+async function pollRoom(){
+  if(!state.roomCode) return;
+  const { data } = await cloud.database.from("rooms").select("*").eq("room_code", state.roomCode).maybeSingle();
+  if(!data){
+    // 房间不存在（可能被删除）
+    handleRemoved("房间已解散");
+    return;
+  }
+  // 检测自己是否被移除
+  const me = (data.players||[]).find(p => p.id === state.myPlayerId);
+  if(!me){
+    handleRemoved("你已被房主移出房间");
+    return;
+  }
+  renderRoom(data);
+  // 若轮到人机，触发 AI 行动
+  if(data.status === "playing"){
+    const players = data.players || [];
+    const alive = players.filter(p => p.alive);
+    if(alive.length > 1){
+      const turnIdx = ((data.current_turn||0) % players.length + players.length) % players.length;
+      const cur = players[turnIdx];
+      if(cur && cur.isAI && cur.alive){
+        await aiTakeTurn(data, cur, turnIdx);
+      }
+    }
+  }
+}
+
+/* 被移除/房间解散时的统一处理 */
+function handleRemoved(msg){
+  if(state.pollTimer){ clearInterval(state.pollTimer); state.pollTimer = null; }
+  state.roomCode = null; state.roomId = null; state.myPlayerId = null;
+  state.dice = []; state.locked = []; state.rollsLeft = MAX_ROLLS;
+  alert(msg);
+  switchView("lobby");
+}
+
+/* ============================================================
+   渲染
+   ============================================================ */
+function renderRoom(data){
+  document.getElementById("room-code").textContent = data.room_code;
+  document.getElementById("room-status").textContent = data.status === "waiting" ? "等待中" : data.status === "playing" ? "对战中" : "已结束";
+
+  // 玩家列表
+  const row = document.getElementById("players-row");
+  row.innerHTML = "";
+  const players = data.players || [];
+  const turnIdx = ((data.current_turn||0) % Math.max(1, players.length) + Math.max(1, players.length)) % Math.max(1, players.length);
+  const me = players.find(p => p.id === state.myPlayerId);
+  const isHost = !!(me && me.isHost);
+  const isWaiting = data.status === "waiting";
+  players.forEach((p, i) => {
+    const card = document.createElement("div");
+    card.className = "player-card";
+    if(i === turnIdx && data.status === "playing" && p.alive) card.className += " active";
+    if(!p.alive) card.className += " dead";
+    const tag = p.isAI ? '<span class="ptag ai">人机</span>' : (p.id === state.myPlayerId ? '<span class="ptag you">你</span>' : (p.isHost ? '<span class="ptag">房主</span>' : ""));
+    const hpPct = Math.max(0, Math.round(p.hp / MAX_HP * 100));
+    // 移除按钮：仅房主可见、仅在等待阶段、且不能对自己显示（人机也可被移除）
+    const canKick = isHost && isWaiting && p.id !== state.myPlayerId;
+    const kickBtn = canKick
+      ? `<button class="kick-btn visible" onclick="kickPlayer('${p.id}')">移除</button>`
+      : "";
+    card.innerHTML = `
+      ${tag}
+      <div class="pname">${p.name}</div>
+      <div class="phero">${p.avatar} ${p.heroName}</div>
+      <div class="hp-bar"><div class="fill" style="width:${hpPct}%"></div></div>
+      <div class="hp-num">${p.alive ? p.hp + " HP" : "已出局"}</div>
+      ${kickBtn}
+    `;
+    row.appendChild(card);
+  });
+
+  // 我的状态
+  if(me){
+    document.getElementById("hud-hero").innerHTML = `<span class="mini-avatar">${me.avatar}</span>${me.heroName}`;
+    document.getElementById("hud-hp").textContent = me.hp;
+  }
+  document.getElementById("hud-rolls").textContent = state.rollsLeft;
+
+  // 更新按钮状态
+  updateButtons(data);
+}
+
+function updateButtons(data){
+  const isWaiting = !data || data.status === "waiting";
+  const players = data ? (data.players||[]) : [];
+  const me = players.find(p => p.id === state.myPlayerId);
+  const alive = players.filter(p => p.alive);
+  const isMyTurn = data && data.status === "playing" && me && me.alive &&
+    ((((data.current_turn||0) % players.length + players.length) % players.length) === players.indexOf(me));
+
+  document.getElementById("btn-roll").disabled = !isMyTurn || state.rollsLeft <= 0;
+  document.getElementById("btn-lock").disabled = !isMyTurn;
+  document.getElementById("btn-endturn").disabled = !isMyTurn;
+  document.getElementById("btn-addai").disabled = !isWaiting || !me || !me.isHost;
+  document.getElementById("btn-start").disabled = !isWaiting || !me || !me.isHost || alive.length < 2;
+
+  if(data && data.status === "playing" && alive.length <= 1){
+    const winner = alive[0];
+    setFeedback(winner ? `🏆 ${winner.name} 获胜！` : "游戏结束");
+    document.getElementById("btn-roll").disabled = true;
+    document.getElementById("btn-endturn").disabled = true;
+  }
+}
+
+function renderDice(){
+  const row = document.getElementById("dice-row");
+  row.innerHTML = "";
+  for(let i=0;i<DICE_COUNT;i++){
+    const el = document.createElement("div");
+    el.className = "die" + (state.locked[i] ? " locked" : "");
+    el.textContent = state.dice[i] || "❔";
+    el.onclick = () => toggleLock(i);
+    row.appendChild(el);
+  }
+}
+
+function renderScoreboard(){
+  const body = document.getElementById("scoreboard-body");
+  body.innerHTML = "";
+  COMBOS.forEach(c => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td class="combo">${c.label}</td><td>${c.desc}</td><td>${c.dmg} 伤害</td><td>—</td>`;
+    body.appendChild(tr);
+  });
+}
+
+function setFeedback(msg, flash=false){
+  const el = document.getElementById("feedback");
+  el.textContent = msg;
+  if(flash){ el.classList.remove("flash"); void el.offsetWidth; el.classList.add("flash"); }
+}
+
+/* ============================================================
+   游戏逻辑
+   ============================================================ */
+function rollDice(){
+  if(state.rollsLeft <= 0){ setFeedback("本回合掷骰机会已用完"); return; }
+  // 初始化骰子
+  if(state.dice.length === 0){
+    state.dice = []; state.locked = [];
+    for(let i=0;i<DICE_COUNT;i++){ state.dice.push("❔"); state.locked.push(false); }
+  }
+  state.dice = state.dice.map((face, i) => state.locked[i] ? face : randFace());
+  state.rollsLeft--;
+
+  document.querySelectorAll(".die").forEach(d => d.classList.add("rolling"));
+  setTimeout(()=> document.querySelectorAll(".die").forEach(d => d.classList.remove("rolling")), 500);
+
+  renderDice();
+  document.getElementById("hud-rolls").textContent = state.rollsLeft;
+
+  if(state.rollsLeft <= 0){
+    setFeedback("掷骰结束，可「结束回合」结算伤害");
+  } else {
+    setFeedback(`还剩 ${state.rollsLeft} 次掷骰，点击骰子锁定`);
+  }
+}
+
+function toggleLock(i){
+  if(state.dice.length === 0 || state.dice[i] === "❔") return;
+  state.locked[i] = !state.locked[i];
+  renderDice();
+}
+
+function lockAllDice(){
+  if(state.dice.length === 0 || state.dice.some(f => f === "❔")) return;
+  for(let i=0;i<DICE_COUNT;i++) state.locked[i] = true;
+  renderDice();
+}
+
+async function endTurn(){
+  if(state.dice.length === 0){ setFeedback("请先掷骰"); return; }
+  const { combo, dmg } = calcCombo(state.dice);
+  const roomCode = state.roomCode;
+  if(!roomCode) return;
+
+  const { data } = await cloud.database.from("rooms").select("*").eq("room_code", roomCode).maybeSingle();
+  if(!data) return;
+  let players = data.players || [];
+  const turnIdx = ((data.current_turn||0) % players.length + players.length) % players.length;
+  const me = players[turnIdx];
+  if(!me || me.id !== state.myPlayerId){ setFeedback("还没轮到你"); return; }
+
+  // 选择目标：找下一个存活的玩家
+  let targetIdx = (turnIdx + 1) % players.length;
+  let guard = 0;
+  while(players[targetIdx].alive === false && guard < players.length){
+    targetIdx = (targetIdx + 1) % players.length; guard++;
+  }
+  const target = players[targetIdx];
+
+  if(combo && dmg > 0 && target && target.id !== me.id){
+    target.hp = Math.max(0, target.hp - dmg);
+    if(target.hp <= 0) target.alive = false;
+    setFeedback(`✨ 「${combo.label}」造成 ${dmg} 伤害 → ${target.name}`, true);
+  } else {
+    setFeedback("未凑出组合，无伤害");
+  }
+
+  // 推进回合
+  let nextTurn = (turnIdx + 1) % players.length;
+
+  await cloud.database.from("rooms").update({
+    players,
+    current_turn: nextTurn,
+    turn_rolls_left: MAX_ROLLS,
+    turn_locked: [], turn_dice: [],
+  }).eq("room_code", roomCode);
+
+  // 重置本回合骰子
+  state.dice = []; state.locked = [];
+  state.rollsLeft = MAX_ROLLS;
+  renderDice();
+  document.getElementById("hud-rolls").textContent = state.rollsLeft;
+
+  // 检查是否只剩一人
+  const alive = players.filter(p => p.alive);
+  if(alive.length <= 1){
+    await cloud.database.from("rooms").update({ status:"ended" }).eq("room_code", roomCode);
+  }
+}
+
+/* 人机 AI 行动 */
+async function aiTakeTurn(data, aiPlayer, turnIdx){
+  // 防重入：简单用 updated_at 判断（这里用锁标记）
+  if(aiPlayer._acting) return;
+  // 在本地内存里做，避免并发
+  const roomCode = data.room_code;
+  // 模拟掷骰
+  const faces = [];
+  const aiHero = HEROES.find(h => h.id === aiPlayer.heroId);
+  const pool = aiHero ? aiHero.faces : ["⚔️","⭐","🌙"];
+  for(let i=0;i<DICE_COUNT;i++) faces.push(pool[Math.floor(Math.random()*pool.length)]);
+  const { combo, dmg } = calcCombo(faces);
+
+  const { data: fresh } = await cloud.database.from("rooms").select("*").eq("room_code", roomCode).maybeSingle();
+  if(!fresh || fresh.status !== "playing") return;
+  let players = fresh.players || [];
+  const curTurn = fresh.current_turn || 0;
+  const curIdx = ((curTurn % players.length) + players.length) % players.length;
+  const cur = players[curIdx];
+  if(!cur || !cur.isAI || cur.id !== aiPlayer.id) return; // 已不是它的回合
+
+  let targetIdx = (curIdx + 1) % players.length;
+  let guard = 0;
+  while(players[targetIdx].alive === false && guard < players.length){
+    targetIdx = (targetIdx + 1) % players.length; guard++;
+  }
+  const target = players[targetIdx];
+  if(target && target.id !== cur.id && combo && dmg > 0){
+    target.hp = Math.max(0, target.hp - dmg);
+    if(target.hp <= 0) target.alive = false;
+  }
+
+  const nextTurn = (curIdx + 1) % players.length;
+  await cloud.database.from("rooms").update({
+    players,
+    current_turn: nextTurn,
+  }).eq("room_code", roomCode);
+
+  const alive = players.filter(p => p.alive);
+  if(alive.length <= 1){
+    await cloud.database.from("rooms").update({ status:"ended" }).eq("room_code", roomCode);
+  }
+}
+
+/* ============================================================
+   初始化
+   ============================================================ */
+document.querySelectorAll(".nav button").forEach(b => b.addEventListener("click", () => switchView(b.dataset.view)));
+renderHeroSelect();
+renderDice();
+renderScoreboard();
+</script>
+</body>
+</html>
